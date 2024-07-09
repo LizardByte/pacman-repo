@@ -14,7 +14,14 @@ Add the following code snippet to your `/etc/pacman.conf`:
 ```conf
 [lizardbyte]
 SigLevel = Optional
-Server = https://raw.github.com/LizardByte/pacman-repo/repo
+Server = https://app.lizardbyte.dev/pacman-repo
+```
+
+or:
+```conf
+[lizardbyte]
+SigLevel = Optional
+Server = https://raw.github.com/LizardByte/pacman-repo/gh-pages
 ```
 
 Then, run `sudo pacman -Sy` to update repository.
