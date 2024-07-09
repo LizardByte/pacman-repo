@@ -1,6 +1,6 @@
 ---
 global-settings:
-  repository: repo/repo.db.tar.gz
+  repository: gh-pages/repo.db.tar.gz
   container: pkgbuilds
   read-build-metadata: either
   record-failed-builds: failed-builds.yaml

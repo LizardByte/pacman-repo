@@ -32,9 +32,12 @@ jobs:
           reflector --latest 10 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist
 
       - name: Download Pacman Repo Builder
+        env:
+          VERSION: "0.0.0-rc.65"
+          URL_ASSET: "build-pacman-repo-x86_64-unknown-linux-gnu"
         run: |
           wget \
-            https://github.com/pacman-repo-builder/pacman-repo-builder/releases/download/0.0.0-rc.65/build-pacman-repo-x86_64-unknown-linux-gnu \
+            "https://github.com/pacman-repo-builder/pacman-repo-builder/releases/download/${VERSION}/${URL_ASSET}" \
             -O /usr/bin/build-pacman-repo
           chmod +x /usr/bin/build-pacman-repo
 
@@ -44,8 +47,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: repo
-          path: repo
+          ref: gh-pages
+          path: gh-pages
           persist-credentials: false  # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0  # otherwise, will fail to push refs to dest repo
 
@@ -54,13 +57,17 @@ jobs:
           build-pacman-repo patch-makepkg --replace
           build-pacman-repo build
 
+      - name: Additional updates
+        run: |
+          cp -f README.md ./gh-pages/README.md
+
       - name: GitHub Commit & Push
         if: github.event_name == 'schedule' || github.event_name == 'push'
         uses: actions-js/push@v1.5
         with:
           author_email: ${{ secrets.GH_BOT_EMAIL }}
           author_name: ${{ secrets.GH_BOT_NAME }}
-          branch: repo  # commit to repo branch
-          directory: repo  # use the repo directory
+          branch: gh-pages
+          directory: gh-pages
           github_token: ${{ secrets.GH_BOT_TOKEN }}
           message: 'Update per ${{ github.event_name }}: ${{ github.sha }}'
