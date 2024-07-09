@@ -1,0 +1,66 @@
+---
+name: Build Pacman Repo
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  schedule:
+    - cron: "0 0 * * *"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  build-pacman-repo:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux/archlinux:base-devel
+    steps:
+      - name: Container Setup
+        run: |
+          pacman -Syu --disable-download-timeout --needed --noconfirm \
+            archlinux-keyring \
+            git \
+            reflector \
+            wget
+
+      - name: Update mirrors
+        run: |
+          reflector --latest 10 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist
+
+      - name: Download Pacman Repo Builder
+        run: |
+          wget \
+            https://github.com/pacman-repo-builder/pacman-repo-builder/releases/download/0.0.0-rc.65/build-pacman-repo-x86_64-unknown-linux-gnu \
+            -O /usr/bin/build-pacman-repo
+          chmod +x /usr/bin/build-pacman-repo
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: repo
+          path: repo
+          persist-credentials: false  # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
+          fetch-depth: 0  # otherwise, will fail to push refs to dest repo
+
+      - name: Build Pacman Repo
+        run: |
+          build-pacman-repo patch-makepkg --replace
+          build-pacman-repo build
+
+      - name: GitHub Commit & Push
+        if: github.event_name == 'schedule' || github.event_name == 'push'
+        uses: actions-js/push@v1.5
+        with:
+          author_email: ${{ secrets.GH_BOT_EMAIL }}
+          author_name: ${{ secrets.GH_BOT_NAME }}
+          branch: repo  # commit to repo branch
+          directory: repo  # use the repo directory
+          github_token: ${{ secrets.GH_BOT_TOKEN }}
+          message: 'Update per ${{ github.event_name }}: ${{ github.sha }}'

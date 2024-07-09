@@ -1,0 +1,89 @@
+# Edit on github: https://github.com/LizardByte/Sunshine/blob/master/packaging/linux/Arch/PKGBUILD
+# Reference: https://wiki.archlinux.org/title/PKGBUILD
+
+pkgname=sunshine
+pkgver=0.23.1
+pkgrel=1
+pkgdesc="A self-hosted GameStream host for Moonlight."
+arch=('x86_64' 'aarch64')
+url=https://app.lizardbyte.dev/Sunshine
+license=('GPL-3.0-only')
+install=sunshine.install
+
+_gcc_version=13
+
+depends=('avahi'
+         'boost-libs'
+         'curl'
+         'libayatana-appindicator'
+         'libcap'
+         'libdrm'
+         'libevdev'
+         'libmfx'
+         'libnotify'
+         'libpulse'
+         'libva'
+         'libvdpau'
+         'libx11'
+         'libxcb'
+         'libxfixes'
+         'libxrandr'
+         'libxtst'
+         'miniupnpc'
+         'numactl'
+         'openssl'
+         'opus'
+         'python'
+         'udev')
+makedepends=('boost'
+             'cmake'
+             'cuda'
+             "gcc${_gcc_version}"
+             'git'
+             'make'
+             'nodejs'
+             'npm')
+optdepends=('cuda: Nvidia GPU encoding support'
+            'libva-mesa-driver: AMD GPU encoding support'
+            'xorg-server-xvfb: Virtual X server for headless testing')
+
+provides=()
+conflicts=()
+
+source=("$pkgname::git+https://github.com/LizardByte/Sunshine.git#tag=v${pkgver}")
+sha256sums=('SKIP')
+
+prepare() {
+    cd "$pkgname"
+    git submodule update --recursive --init
+
+    # Allow use of miniupnpc > v0.17
+    git cherry-pick -n a940cdb394055139ca6a964289f414da562452e3
+}
+
+build() {
+    export BRANCH="master"
+    export BUILD_VERSION="${pkgver}"
+    export COMMIT="$(git rev-parse HEAD)"
+
+    export CC="gcc-${_gcc_version}"
+    export CXX="g++-${_gcc_version}"
+
+    export CFLAGS="${CFLAGS/-Werror=format-security/}"
+    export CXXFLAGS="${CXXFLAGS/-Werror=format-security/}"
+
+    cmake \
+        -S "$pkgname" \
+        -B build \
+        -Wno-dev \
+        -D BUILD_WERROR=ON \
+        -D CMAKE_INSTALL_PREFIX=/usr \
+        -D SUNSHINE_EXECUTABLE_PATH=/usr/bin/sunshine \
+        -D SUNSHINE_ASSETS_DIR="share/sunshine"
+
+    make -C build
+}
+
+package() {
+    make -C build install DESTDIR="$pkgdir"
+}
