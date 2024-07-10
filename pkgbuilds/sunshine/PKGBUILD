@@ -51,7 +51,7 @@ provides=()
 conflicts=()
 
 source=("$pkgname::git+https://github.com/LizardByte/Sunshine.git#tag=v${pkgver}")
-sha256sums=('SKIP')
+sha256sums=('b9ac221ca53c86010d02d7144c289053e7055c537d7313a8ff3063ec59477e4d')
 
 prepare() {
     cd "$pkgname"

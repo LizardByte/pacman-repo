@@ -9,6 +9,8 @@ pkgbase = sunshine
 	license = GPL-3.0-only
 	makedepends = boost
 	makedepends = cmake
+	makedepends = cuda
+	makedepends = gcc13
 	makedepends = git
 	makedepends = make
 	makedepends = nodejs
@@ -38,9 +40,8 @@ pkgbase = sunshine
 	depends = udev
 	optdepends = cuda: Nvidia GPU encoding support
 	optdepends = libva-mesa-driver: AMD GPU encoding support
-	optdepends = intel-media-driver: Intel GPU encoding support
 	optdepends = xorg-server-xvfb: Virtual X server for headless testing
 	source = sunshine::git+https://github.com/LizardByte/Sunshine.git#tag=v0.23.1
-	sha256sums = SKIP
+	sha256sums = b9ac221ca53c86010d02d7144c289053e7055c537d7313a8ff3063ec59477e4d
 
 pkgname = sunshine
