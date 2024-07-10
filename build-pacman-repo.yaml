@@ -1,6 +1,6 @@
 ---
 global-settings:
-  repository: gh-pages/lizardbyte.db.tar.gz
+  repository: repo/lizardbyte.db.tar.gz
   container: pkgbuilds
   read-build-metadata: either
   record-failed-builds: failed-builds.yaml

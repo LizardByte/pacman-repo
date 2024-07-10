@@ -3,7 +3,7 @@
 
 pkgname=sunshine
 pkgver=0.23.1
-pkgrel=1
+pkgrel=2
 pkgdesc="A self-hosted GameStream host for Moonlight."
 arch=('x86_64' 'aarch64')
 url=https://app.lizardbyte.dev/Sunshine
@@ -33,7 +33,6 @@ depends=('avahi'
          'numactl'
          'openssl'
          'opus'
-         'python'
          'udev')
 makedepends=('boost'
              'cmake'
@@ -79,9 +78,18 @@ build() {
         -D BUILD_WERROR=ON \
         -D CMAKE_INSTALL_PREFIX=/usr \
         -D SUNSHINE_EXECUTABLE_PATH=/usr/bin/sunshine \
-        -D SUNSHINE_ASSETS_DIR="share/sunshine"
+        -D SUNSHINE_ASSETS_DIR="share/sunshine" \
+        -D TESTS_ENABLE_PYTHON_TESTS=OFF
 
     make -C build
+}
+
+check() {
+    export CC="gcc-${_gcc_version}"
+    export CXX="g++-${_gcc_version}"
+
+    cd "${srcdir}/build/tests"
+    ./test_sunshine --gtest_color=yes
 }
 
 package() {

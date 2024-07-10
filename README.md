@@ -7,24 +7,36 @@ Repository of Arch Linux packages for LizardByte packages.
 > become the packager of an AUR repo. If you use the AUR, please carefully inspect any PKGBUILDS for packages that you
 > are using, before any installation. This repository is the only official source of LizardByte packages.
 
-## Installation
+## Repo Installation
 
 Add the following code snippet to your `/etc/pacman.conf`:
 
 ```conf
 [lizardbyte]
 SigLevel = Optional
-Server = https://app.lizardbyte.dev/pacman-repo
-```
-
-or:
-```conf
-[lizardbyte]
-SigLevel = Optional
-Server = https://raw.github.com/LizardByte/pacman-repo/gh-pages
+Server = https://github.com/LizardByte/pacman-repo/releases/latest/download
 ```
 
 Then, run `sudo pacman -Sy` to update repository.
+
+## Packages
+
+### List repo packages
+
+```bash
+pacman -Sl lizardbyte
+```
+
+### Install repo packages
+
+```bash
+sudo pacman -S lizardbyte/<package-name>
+```
+
+e.g.
+```bash
+sudo pacman -S lizardbyte/sunshine
+```
 
 ## Considerations
 
