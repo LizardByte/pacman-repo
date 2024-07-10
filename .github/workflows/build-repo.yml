@@ -17,7 +17,7 @@ jobs:
   build-pacman-repo:
     runs-on: ubuntu-latest
     container:
-      image: archlinux/archlinux:base-devel
+      image: archlinux:base-devel
     steps:
       - name: Container Setup
         run: |
