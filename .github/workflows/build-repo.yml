@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: archlinux:base-devel
+    env:
+      DISPLAY: ":1"
     steps:
       - name: Container Setup
         run: |
@@ -25,7 +27,8 @@ jobs:
             archlinux-keyring \
             git \
             reflector \
-            wget
+            wget \
+            xorg-server-xvfb
 
       - name: Update mirrors
         run: |
@@ -44,30 +47,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          path: gh-pages
-          persist-credentials: false  # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
-          fetch-depth: 0  # otherwise, will fail to push refs to dest repo
+      - name: Init
+        run: |
+          mkdir -p repo
+          Xvfb ${DISPLAY} -screen 0 1024x768x24 &
 
       - name: Build Pacman Repo
         run: |
           build-pacman-repo patch-makepkg --replace
           build-pacman-repo build
 
-      - name: Additional updates
-        run: |
-          cp -f README.md ./gh-pages/README.md
-
-      - name: GitHub Commit & Push
+      - name: Create/Update GitHub Release
         if: github.event_name == 'schedule' || github.event_name == 'push'
-        uses: actions-js/push@v1.5
+        uses: ncipollo/release-action@v1.14.0
         with:
-          author_email: ${{ secrets.GH_BOT_EMAIL }}
-          author_name: ${{ secrets.GH_BOT_NAME }}
-          branch: gh-pages
-          directory: gh-pages
-          github_token: ${{ secrets.GH_BOT_TOKEN }}
-          message: 'Update per ${{ github.event_name }}: ${{ github.sha }}'
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          artifacts: repo/*
+          bodyFile: README.md
+          commit: master
+          name: repo
+          prerelease: false
+          tag: repo
+          token: ${{ secrets.GH_BOT_TOKEN }}
