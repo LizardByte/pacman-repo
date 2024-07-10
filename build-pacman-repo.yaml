@@ -1,6 +1,6 @@
 ---
 global-settings:
-  repository: gh-pages/repo.db.tar.gz
+  repository: gh-pages/lizardbyte.db.tar.gz
   container: pkgbuilds
   read-build-metadata: either
   record-failed-builds: failed-builds.yaml
@@ -11,7 +11,7 @@ global-settings:
   pacman: pacman
   arch-filter: [x86_64]
   check: inherit
-  packager: LizardByte <108553330+LizardByte-bot@users.noreply.github.com>
+  packager: LizardByte-bot <108553330+LizardByte-bot@users.noreply.github.com>
   allow-failure: false
   dereference-database-symlinks: true
 members:
