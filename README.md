@@ -17,6 +17,12 @@ SigLevel = Optional
 Server = https://github.com/LizardByte/pacman-repo/releases/latest/download
 ```
 
+```conf
+[lizardbyte-beta]
+SigLevel = Optional
+Server = https://github.com/LizardByte/pacman-repo/releases/beta/download
+```
+
 Then, run `sudo pacman -Sy` to update repository.
 
 ## Packages
@@ -25,17 +31,20 @@ Then, run `sudo pacman -Sy` to update repository.
 
 ```bash
 pacman -Sl lizardbyte
+pacman -Sl lizardbyte-beta
 ```
 
 ### Install repo packages
 
 ```bash
 sudo pacman -S lizardbyte/<package-name>
+sudo pacman -S lizardbyte-beta/<package-name>
 ```
 
 e.g.
 ```bash
 sudo pacman -S lizardbyte/sunshine
+sudo pacman -S lizardbyte-beta/sunshine-git
 ```
 
 ## Considerations
