@@ -17,22 +17,31 @@ jobs:
   build-pacman-repo:
     runs-on: ubuntu-latest
     container:
-      image: archlinux:base-devel
+      image: archlinux/archlinux:base-devel
     env:
       DISPLAY: ":1"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repo: lizardbyte
+            release_name: stable
+          - repo: lizardbyte-beta
+            release_name: beta
     steps:
       - name: Container Setup
         run: |
+          pacman -Syy --disable-download-timeout --needed --noconfirm \
+            archlinux-keyring
           pacman -Syu --disable-download-timeout --needed --noconfirm \
-            archlinux-keyring \
+            base-devel \
+            cmake \
+            cuda \
             git \
-            reflector \
+            jq \
             wget \
             xorg-server-xvfb
-
-      - name: Update mirrors
-        run: |
-          reflector --latest 10 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist
+          pacman -Scc --noconfirm
 
       - name: Download Pacman Repo Builder
         env:
@@ -44,17 +53,114 @@ jobs:
             -O /usr/bin/build-pacman-repo
           chmod +x /usr/bin/build-pacman-repo
 
+          # patch makepkg to allow running as root
+          build-pacman-repo patch-makepkg --replace
+
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Download and Patch beta PKGBUILDs
+        if: matrix.repo == 'lizardbyte-beta'
+        run: |
+          # we don't want any stable packages to be built, so remove them
+          rm -rf pkgbuilds
+          mkdir -p pkgbuilds
+          cd pkgbuilds
+
+          while IFS=' ' read -r repo og_pkg_name updated_pkg_name release_asset; do
+            # Skip lines that start with #
+            [[ $repo =~ ^#.*$ ]] && continue
+
+            echo "repo: ${repo}"
+            echo "og_pkg_name: ${og_pkg_name}"
+            echo "updated_pkg_name: ${updated_pkg_name}"
+            echo "release_asset: ${release_asset}"
+
+            # get the first release with the specified asset (pre-releases first, followed by stable)
+            latest_release=$(
+              curl -s "https://api.github.com/repos/${repo}/releases" | \
+              jq -r --arg release_asset "${release_asset}" '
+                map(.assets[] | select(.name == $release_asset) | .browser_download_url) |
+                first
+              '
+            )
+            echo "latest_release: ${latest_release}"
+            if [[ -z "${latest_release}" ]]; then
+              echo "::warning:: No pre-release found for ${repo} with asset ${release_asset}"
+              continue
+            fi
+
+            mkdir -p ${updated_pkg_name}
+            pushd ${updated_pkg_name}
+
+            wget "${latest_release}" -O "${updated_pkg_name}.pkg.tar.gz"
+
+            # extract the package
+            tar -xvf "${updated_pkg_name}.pkg.tar.gz"
+            rm "${updated_pkg_name}.pkg.tar.gz"
+
+            # sed PKGBUILD
+            sed -i "s/pkgname='${og_pkg_name}'/pkgname='${updated_pkg_name}'/" PKGBUILD
+            sed -i "s/provides=(.*)/provides=('${og_pkg_name}')/" PKGBUILD
+            sed -i "s/conflicts=(.*)/conflicts=('${og_pkg_name}')/" PKGBUILD
+
+            # Check if provides is missing and append if necessary
+            if ! grep -q "^provides=" PKGBUILD; then
+              echo "provides=('${og_pkg_name}')" >> PKGBUILD
+            fi
+
+            # Check if conflicts is missing and append if necessary
+            if ! grep -q "^conflicts=" PKGBUILD; then
+              echo "conflicts=('${og_pkg_name}')" >> PKGBUILD
+            fi
+
+            echo "new PKGBUILD:"
+            cat PKGBUILD
+
+            # re-generate .SRCINFO
+            makepkg --printsrcinfo > .SRCINFO
+
+            # list files
+            echo "files in ${updated_pkg_name}:"
+            ls -a
+
+            popd
+          done < ../beta-repos.conf
+
       - name: Init
         run: |
+          # create the destination directory for built packages
           mkdir -p repo
+
+          # patch the build flags
+          sed -i 's,#MAKEFLAGS="-j2",MAKEFLAGS="-j$(nproc)",g' /etc/makepkg.conf
+
+          # start Xvfb which may be used for unit tests
           Xvfb ${DISPLAY} -screen 0 1024x768x24 &
 
       - name: Build Pacman Repo
         run: |
-          build-pacman-repo patch-makepkg --replace
+          source /etc/profile  # ensure cuda is in the PATH
+
+          # generate build-pacman-repo.yaml
+          build-pacman-repo print-config \
+            --repository repo/${{ matrix.repo }}.db.tar.gz \
+            --container pkgbuilds \
+            --require-pkgbuild \
+            --require-srcinfo \
+            --with-record-failed-builds repo/failed-build-records.yaml \
+            --with-install-missing-dependencies true \
+            --with-clean-before-build false \
+            --with-clean-after-build false \
+            --with-force-rebuild true \
+            --with-pacman pacman \
+            --with-arch-filter x86_64 \
+            --with-check inherit \
+            --with-packager "${{ secrets.GH_BOT_NAME }} <${{ secrets.GH_BOT_EMAIL }}>" \
+            --with-allow-failure false \
+            --with-dereference-database-symlinks true \
+            > build-pacman-repo.yaml
+
           build-pacman-repo build
 
       - name: Create/Update GitHub Release
@@ -66,7 +172,8 @@ jobs:
           artifacts: repo/*
           bodyFile: README.md
           commit: master
-          name: repo
+          makeLatest: ${{ matrix.repo == 'lizardbyte' && 'true' || 'false' }}
+          name: ${{ matrix.release_name }}
           prerelease: false
-          tag: repo
+          tag: ${{ matrix.release_name }}
           token: ${{ secrets.GH_BOT_TOKEN }}
