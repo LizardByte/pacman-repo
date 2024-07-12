@@ -24,7 +24,7 @@ Server = https://github.com/LizardByte/pacman-repo/releases/latest/download
 ```conf
 [lizardbyte-beta]
 SigLevel = Optional
-Server = https://github.com/LizardByte/pacman-repo/releases/beta/download
+Server = https://github.com/LizardByte/pacman-repo/releases/download/beta
 ```
 
 Then, run `sudo pacman -Sy` to update repository.
