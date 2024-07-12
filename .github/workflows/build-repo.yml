@@ -20,6 +20,7 @@ jobs:
       image: archlinux/archlinux:base-devel
     env:
       DISPLAY: ":1"
+      CONTAINER_DIR: pkgbuilds
     strategy:
       fail-fast: false
       matrix:
@@ -59,13 +60,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Configure Git directory
+        # prevent fatal error when building stable matrix
+        if: matrix.release_name == 'stable'
+        run: git config --global --add safe.directory /__w/pacman-repo/pacman-repo
+
       - name: Download and Patch beta PKGBUILDs
-        if: matrix.repo == 'lizardbyte-beta'
+        if: matrix.release_name == 'beta'
         run: |
           # we don't want any stable packages to be built, so remove them
-          rm -rf pkgbuilds
-          mkdir -p pkgbuilds
-          cd pkgbuilds
+          rm -rf ${CONTAINER_DIR}
+          mkdir -p ${CONTAINER_DIR}
+          cd ${CONTAINER_DIR}
 
           while IFS=' ' read -r repo og_pkg_name updated_pkg_name release_asset; do
             # Skip lines that start with #
@@ -145,7 +151,7 @@ jobs:
           # generate build-pacman-repo.yaml
           build-pacman-repo print-config \
             --repository repo/${{ matrix.repo }}.db.tar.gz \
-            --container pkgbuilds \
+            --container ${CONTAINER_DIR} \
             --require-pkgbuild \
             --require-srcinfo \
             --with-record-failed-builds repo/failed-build-records.yaml \
@@ -162,6 +168,13 @@ jobs:
             > build-pacman-repo.yaml
 
           build-pacman-repo build
+
+          # ensure files are present in the repo
+          repo_files=$(ls repo)
+          if [[ -z "${repo_files}" ]]; then
+              echo "::error:: No files found in repo"
+              exit 1
+          fi
 
       - name: Create/Update GitHub Release
         if: github.event_name == 'schedule' || github.event_name == 'push'
