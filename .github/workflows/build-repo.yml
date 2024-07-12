@@ -167,13 +167,19 @@ jobs:
             --with-dereference-database-symlinks true \
             > build-pacman-repo.yaml
 
+          # validate .SRCINFO files
+          build-pacman-repo sync-srcinfo || \
+            echo "::warning:: .SRCINFO files mismatch" >> $GITHUB_STEP_SUMMARY && \
+            build-pacman-repo sync-srcinfo -u
+
+          # build the packages and create the repo
           build-pacman-repo build
 
           # ensure files are present in the repo
           repo_files=$(ls repo)
           if [[ -z "${repo_files}" ]]; then
-              echo "::error:: No files found in repo"
-              exit 1
+            echo "::error:: No files found in repo"
+            exit 1
           fi
 
       - name: Create/Update GitHub Release
