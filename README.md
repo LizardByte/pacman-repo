@@ -1,5 +1,9 @@
 # LizardByte's Pacman Repository
 
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/LizardByte/pacman-repo/build-repo.yml?branch=master&event=schedule&style=for-the-badge&logo=github)](https://github.com/LizardByte/pacman-repo/actions/workflows/build-repo.yml?query=event%3Aschedule+branch%3Amaster)
+[![GitHub Downloads (all assets, specific tag)](https://img.shields.io/github/downloads/LizardByte/pacman-repo/beta/total?style=for-the-badge&logo=archlinux&label=daily%20downloads%40beta)](https://github.com/LizardByte/pacman-repo/releases/tag/beta)
+[![GitHub Downloads (all assets, specific tag)](https://img.shields.io/github/downloads/LizardByte/pacman-repo/latest/total?style=for-the-badge&logo=archlinux&label=daily%20downloads%40latest)](https://github.com/LizardByte/pacman-repo/releases/latest)
+
 Repository of Arch Linux packages for LizardByte packages.
 
 > [!CAUTION]
