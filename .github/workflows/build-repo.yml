@@ -172,8 +172,8 @@ jobs:
           artifacts: repo/*
           bodyFile: README.md
           commit: master
-          makeLatest: ${{ matrix.repo == 'lizardbyte' && 'true' || 'false' }}
+          makeLatest: ${{ matrix.release_name == 'stable' || false }}
           name: ${{ matrix.release_name }}
-          prerelease: false
+          prerelease: ${{ matrix.release_name == 'beta' || false }}
           tag: ${{ matrix.release_name }}
           token: ${{ secrets.GH_BOT_TOKEN }}
