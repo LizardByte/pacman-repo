@@ -160,7 +160,6 @@ jobs:
             --with-clean-after-build false \
             --with-force-rebuild true \
             --with-pacman pacman \
-            --with-arch-filter x86_64 \
             --with-check inherit \
             --with-packager "${{ secrets.GH_BOT_NAME }} <${{ secrets.GH_BOT_EMAIL }}>" \
             --with-allow-failure false \
