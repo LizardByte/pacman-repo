@@ -32,6 +32,14 @@ jobs:
     steps:
       - name: Container Setup
         run: |
+          # create a user to build packages
+          useradd -m builder
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+          # patch the build flags
+          sed -i 's,#MAKEFLAGS="-j2",MAKEFLAGS="-j$(nproc)",g' /etc/makepkg.conf
+
+          # install deps
           pacman -Syy --disable-download-timeout --needed --noconfirm \
             archlinux-keyring
           pacman -Syu --disable-download-timeout --needed --noconfirm \
@@ -53,9 +61,6 @@ jobs:
             "https://github.com/pacman-repo-builder/pacman-repo-builder/releases/download/${VERSION}/${URL_ASSET}" \
             -O /usr/bin/build-pacman-repo
           chmod +x /usr/bin/build-pacman-repo
-
-          # patch makepkg to allow running as root
-          build-pacman-repo patch-makepkg --replace
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -124,7 +129,7 @@ jobs:
             cat PKGBUILD
 
             # re-generate .SRCINFO
-            makepkg --printsrcinfo > .SRCINFO
+            sudo -u builder bash -c 'makepkg --printsrcinfo > .SRCINFO'
 
             # list files
             echo "files in ${updated_pkg_name}:"
@@ -137,9 +142,6 @@ jobs:
         run: |
           # create the destination directory for built packages
           mkdir -p repo
-
-          # patch the build flags
-          sed -i 's,#MAKEFLAGS="-j2",MAKEFLAGS="-j$(nproc)",g' /etc/makepkg.conf
 
           # start Xvfb which may be used for unit tests
           Xvfb ${DISPLAY} -screen 0 1024x768x24 &
@@ -173,7 +175,7 @@ jobs:
             build-pacman-repo sync-srcinfo -u
 
           # build the packages and create the repo
-          build-pacman-repo build
+          sudo -u builder build-pacman-repo build
 
           # ensure files are present in the repo
           repo_files=$(ls repo)
