@@ -45,12 +45,9 @@ jobs:
           pacman -Scc --noconfirm
 
       - name: Download Pacman Repo Builder
-        env:
-          VERSION: "0.0.0-rc.65"
-          URL_ASSET: "build-pacman-repo-x86_64-unknown-linux-gnu"
         run: |
           wget \
-            "https://github.com/pacman-repo-builder/pacman-repo-builder/releases/download/${VERSION}/${URL_ASSET}" \
+            "https://github.com/LizardByte/pacman-repo-builder/releases/latest/download/build-pacman-repo" \
             -O /usr/bin/build-pacman-repo
           chmod +x /usr/bin/build-pacman-repo
 
