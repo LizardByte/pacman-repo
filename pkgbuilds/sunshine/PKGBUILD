@@ -2,7 +2,7 @@
 # Reference: https://wiki.archlinux.org/title/PKGBUILD
 
 pkgname='sunshine'
-pkgver=v2025.118.151840
+pkgver=v2025.122.141614
 pkgrel=1
 pkgdesc="Self-hosted game stream host for Moonlight"
 arch=('x86_64' 'aarch64')
@@ -54,7 +54,7 @@ optdepends=(
 provides=()
 conflicts=()
 
-source=("$pkgname::git+https://github.com/LizardByte/Sunshine.git#commit=26566cc04db12c5bc7434e480cffa025ed838bce")
+source=("$pkgname::git+https://github.com/LizardByte/Sunshine.git#commit=64544e7960f5141f71438d72e5dedad81c03729c")
 sha256sums=('SKIP')
 
 prepare() {
@@ -64,8 +64,8 @@ prepare() {
 
 build() {
     export BRANCH="master"
-    export BUILD_VERSION="v2025.118.151840"
-    export COMMIT="26566cc04db12c5bc7434e480cffa025ed838bce"
+    export BUILD_VERSION="v2025.122.141614"
+    export COMMIT="64544e7960f5141f71438d72e5dedad81c03729c"
 
     export CC="gcc-${_gcc_version}"
     export CXX="g++-${_gcc_version}"
