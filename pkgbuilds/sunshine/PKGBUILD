@@ -3,14 +3,14 @@
 
 pkgname='sunshine'
 pkgver=v2025.122.141614
-pkgrel=1
+pkgrel=2
 pkgdesc="Self-hosted game stream host for Moonlight"
 arch=('x86_64' 'aarch64')
 url=https://app.lizardbyte.dev/Sunshine
 license=('GPL-3.0-only')
 install=sunshine.install
 
-_gcc_version=13
+_gcc_version=14
 
 depends=(
   'avahi'
