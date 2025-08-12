@@ -70,9 +70,9 @@ jobs:
         if: matrix.release_name == 'beta'
         run: |
           # we don't want any stable packages to be built, so remove them
-          rm -rf ${CONTAINER_DIR}
-          mkdir -p ${CONTAINER_DIR}
-          cd ${CONTAINER_DIR}
+          rm -rf "${CONTAINER_DIR}"
+          mkdir -p "${CONTAINER_DIR}"
+          cd "${CONTAINER_DIR}"
 
           while IFS=' ' read -r repo og_pkg_name updated_pkg_name release_asset; do
             # Skip lines that start with #
@@ -97,8 +97,8 @@ jobs:
               continue
             fi
 
-            mkdir -p ${updated_pkg_name}
-            pushd ${updated_pkg_name}
+            mkdir -p "${updated_pkg_name}"
+            pushd "${updated_pkg_name}"
 
             wget "${latest_release}" -O "${updated_pkg_name}.pkg.tar.gz"
 
@@ -140,10 +140,11 @@ jobs:
           mkdir -p repo
 
           # patch the build flags
+          # shellcheck disable=SC2016  # we don't want to expand the expression here
           sed -i 's,#MAKEFLAGS="-j2",MAKEFLAGS="-j$(nproc)",g' /etc/makepkg.conf
 
           # start Xvfb which may be used for unit tests
-          Xvfb ${DISPLAY} -screen 0 1024x768x24 &
+          Xvfb "${DISPLAY}" -screen 0 1024x768x24 &
 
       - name: Build Pacman Repo
         run: |
@@ -152,7 +153,7 @@ jobs:
           # generate build-pacman-repo.yaml
           build-pacman-repo print-config \
             --repository repo/${{ matrix.repo }}.db.tar.gz \
-            --container ${CONTAINER_DIR} \
+            --container "${CONTAINER_DIR}" \
             --require-pkgbuild \
             --require-srcinfo \
             --with-record-failed-builds repo/failed-build-records.yaml \
@@ -170,7 +171,7 @@ jobs:
 
           # validate .SRCINFO files
           build-pacman-repo sync-srcinfo || \
-            echo "::warning:: .SRCINFO files mismatch" >> $GITHUB_STEP_SUMMARY && \
+            echo "::warning:: .SRCINFO files mismatch" >> "${GITHUB_STEP_SUMMARY}" && \
             build-pacman-repo sync-srcinfo -u
 
           # build the packages and create the repo
