@@ -186,7 +186,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: github.event_name == 'schedule' || github.event_name == 'push'
-        uses: ncipollo/release-action@v1.18.0
+        uses: ncipollo/release-action@v1.19.1
         with:
           allowUpdates: true
           artifactErrorsFailBuild: true
