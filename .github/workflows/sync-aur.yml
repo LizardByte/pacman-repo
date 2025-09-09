@@ -1,0 +1,171 @@
+---
+name: Sync AUR Packages
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - 'pkgbuilds/**'
+
+jobs:
+  get-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Generate matrix
+        id: set-matrix
+        run: |
+          # Get all subdirectories in pkgbuilds
+          packages=$(find pkgbuilds -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+          matrix_json=$(echo "$packages" | jq -R -s -c 'split("\n")[:-1] | map(select(length > 0))')
+          echo "matrix={\"package\": $matrix_json}" >> "${GITHUB_OUTPUT}"
+          echo "Generated matrix: {\"package\": $matrix_json}"
+
+  sync:
+    needs:
+      - get-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.get-matrix.outputs.matrix) }}
+      fail-fast: false
+    env:
+      PACKAGE: ${{ matrix.package }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup SSH for AUR
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          # Create SSH directory
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # Write SSH private key ensuring proper line endings
+          echo "$AUR_SSH_PRIVATE_KEY" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+
+          # Verify key format and get key info
+          echo "Validating SSH key format..."
+          if ssh-keygen -l -f ~/.ssh/aur 2>/dev/null; then
+            echo "✓ SSH key validation successful"
+            echo "Key type and fingerprint shown above"
+          else
+            echo "✗ SSH private key format is invalid"
+            exit 1
+          fi
+
+          # Add AUR host key
+          ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 644 ~/.ssh/known_hosts
+
+          # Configure SSH to use the AUR key
+          cat > ~/.ssh/config << EOF
+          Host aur.archlinux.org
+            HostName aur.archlinux.org
+            User aur
+            IdentityFile ~/.ssh/aur
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            LogLevel ERROR
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Configure Git
+        env:
+          GIT_USER_NAME: ${{ secrets.GH_BOT_NAME }}
+          GIT_USER_EMAIL: ${{ secrets.GH_BOT_EMAIL }}
+        run: |
+          git config --global user.name "${GIT_USER_NAME}"
+          git config --global user.email "${GIT_USER_EMAIL}"
+
+      - name: Validate package directory
+        run: |
+          echo "Validating package: ${PACKAGE}"
+          if [ ! -d "pkgbuilds/${PACKAGE}" ]; then
+            echo "Error: Package directory pkgbuilds/${PACKAGE} does not exist"
+            exit 1
+          fi
+          echo "Package directory found: pkgbuilds/${PACKAGE}"
+
+      - name: Clone AUR repository
+        run: |
+          echo "Cloning AUR repository for ${PACKAGE}..."
+          git clone "ssh://aur@aur.archlinux.org/${PACKAGE}.git" "aur-${PACKAGE}"
+          echo "Successfully cloned AUR repository"
+
+      - name: Clean AUR repository
+        working-directory: aur-${{ matrix.package }}
+        run: |
+          echo "Cleaning AUR repository..."
+          find . -maxdepth 1 -not -name '.git' -not -name '.' -not -name '..' -delete
+          echo "AUR repository cleaned"
+
+      - name: Copy package files
+        working-directory: aur-${{ matrix.package }}
+        run: |
+          echo "Copying files from pacman-repo..."
+          cp -r "../pkgbuilds/${PACKAGE}/." .  # Copy all files including hidden ones (like .SRCINFO)
+
+          # copy .gitignore from workspace root
+          cd "${GITHUB_WORKSPACE}"
+          cp .gitignore "aur-${PACKAGE}/.gitignore"
+
+          echo "Files copied successfully"
+
+      - name: Check for changes
+        id: changes
+        working-directory: aur-${{ matrix.package }}
+        run: |
+          # Check if there are any changes
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes detected for ${PACKAGE}"
+            echo "has_changes=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "Changes detected:"
+            git status --porcelain
+            echo "has_changes=true" >> "${GITHUB_OUTPUT}"
+            echo "Displaying git diff:"
+            git diff
+          fi
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.has_changes == 'true'
+        working-directory: aur-${{ matrix.package }}
+        run: |
+          # Add all files
+          git add .
+
+          # Commit changes
+          git commit -m "Update package from LizardByte/pacman-repo
+
+          Automated sync from: https://github.com/LizardByte/pacman-repo/tree/master/pkgbuilds/${PACKAGE}
+          Commit: ${{ github.sha }}"
+
+          # Push to AUR
+          echo "Pushing to AUR..."
+          git push origin master
+
+          echo "Successfully synced ${PACKAGE} to AUR"
+
+      - name: Report sync status
+        run: |
+          if [ "${{ steps.changes.outputs.has_changes }}" = "true" ]; then
+            echo "✅ ${PACKAGE} successfully synced to AUR" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "ℹ️ ${PACKAGE} was already up to date" >> "${GITHUB_STEP_SUMMARY}"
+          fi
