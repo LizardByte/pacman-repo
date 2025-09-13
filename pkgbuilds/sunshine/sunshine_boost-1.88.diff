@@ -1,0 +1,149 @@
+diff --git a/cmake/dependencies/Boost_Sunshine.cmake b/cmake/dependencies/Boost_Sunshine.cmake
+index eb2ac409..9b7a530f 100644
+--- a/cmake/dependencies/Boost_Sunshine.cmake
++++ b/cmake/dependencies/Boost_Sunshine.cmake
+@@ -30,7 +30,7 @@ endif()
+ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.30")
+     cmake_policy(SET CMP0167 NEW)  # Get BoostConfig.cmake from upstream
+ endif()
+-find_package(Boost CONFIG ${BOOST_VERSION} EXACT COMPONENTS ${BOOST_COMPONENTS})
++find_package(Boost CONFIG COMPONENTS ${BOOST_COMPONENTS})
+ if(NOT Boost_FOUND)
+     message(STATUS "Boost v${BOOST_VERSION} package not found in the system. Falling back to FetchContent.")
+     include(FetchContent)
+diff --git a/src/platform/common.h b/src/platform/common.h
+index 28704bb1..3e3b9c29 100644
+--- a/src/platform/common.h
++++ b/src/platform/common.h
+@@ -15,7 +15,35 @@
+ #include <boost/core/noncopyable.hpp>
+ #ifndef _WIN32
+   #include <boost/asio.hpp>
+-  #include <boost/process.hpp>
++  #include <boost/version.hpp>
++  #if BOOST_VERSION < 108800
++    #include <boost/process.hpp>
++  #else
++    #ifndef BOOST_PROCESS_V1_HPP
++    #define BOOST_PROCESS_V1_HPP
++
++    #include <boost/process/v1/args.hpp>
++    #include <boost/process/v1/async.hpp>
++    #include <boost/process/v1/async_system.hpp>
++    #include <boost/process/v1/group.hpp>
++    #include <boost/process/v1/child.hpp>
++    #include <boost/process/v1/cmd.hpp>
++    #include <boost/process/v1/env.hpp>
++    #include <boost/process/v1/environment.hpp>
++    #include <boost/process/v1/error.hpp>
++    #include <boost/process/v1/exe.hpp>
++    #include <boost/process/v1/group.hpp>
++    #include <boost/process/v1/handles.hpp>
++    #include <boost/process/v1/io.hpp>
++    #include <boost/process/v1/pipe.hpp>
++    #include <boost/process/v1/shell.hpp>
++    #include <boost/process/v1/search_path.hpp>
++    #include <boost/process/v1/spawn.hpp>
++    #include <boost/process/v1/system.hpp>
++    #include <boost/process/v1/start_dir.hpp>
++
++    #endif //BOOST_PROCESS_V1_HPP
++  #endif
+ #endif
+ 
+ // local includes
+diff --git a/src/platform/linux/misc.cpp b/src/platform/linux/misc.cpp
+index 81c08ed4..e7ba9f1d 100644
+--- a/src/platform/linux/misc.cpp
++++ b/src/platform/linux/misc.cpp
+@@ -22,7 +22,35 @@
+ // lib includes
+ #include <boost/asio/ip/address.hpp>
+ #include <boost/asio/ip/host_name.hpp>
+-#include <boost/process/v1.hpp>
++#include <boost/version.hpp>
++#if BOOST_VERSION < 108800
++  #include <boost/process/v1.hpp>
++#else
++  #ifndef BOOST_PROCESS_V1_HPP
++  #define BOOST_PROCESS_V1_HPP
++
++  #include <boost/process/v1/args.hpp>
++  #include <boost/process/v1/async.hpp>
++  #include <boost/process/v1/async_system.hpp>
++  #include <boost/process/v1/group.hpp>
++  #include <boost/process/v1/child.hpp>
++  #include <boost/process/v1/cmd.hpp>
++  #include <boost/process/v1/env.hpp>
++  #include <boost/process/v1/environment.hpp>
++  #include <boost/process/v1/error.hpp>
++  #include <boost/process/v1/exe.hpp>
++  #include <boost/process/v1/group.hpp>
++  #include <boost/process/v1/handles.hpp>
++  #include <boost/process/v1/io.hpp>
++  #include <boost/process/v1/pipe.hpp>
++  #include <boost/process/v1/shell.hpp>
++  #include <boost/process/v1/search_path.hpp>
++  #include <boost/process/v1/spawn.hpp>
++  #include <boost/process/v1/system.hpp>
++  #include <boost/process/v1/start_dir.hpp>
++
++  #endif //BOOST_PROCESS_V1_HPP
++#endif
+ #include <fcntl.h>
+ #include <unistd.h>
+ 
+@@ -43,7 +71,11 @@
+ 
+ using namespace std::literals;
+ namespace fs = std::filesystem;
+-namespace bp = boost::process;
++#if BOOST_VERSION < 108800
++  namespace bp = boost::process;
++#else
++  namespace bp = boost::process::v1;
++#endif
+ 
+ window_system_e window_system;
+ 
+diff --git a/src/process.h b/src/process.h
+index f5a81e90..cecc0438 100644
+--- a/src/process.h
++++ b/src/process.h
+@@ -13,7 +13,35 @@
+ #include <unordered_map>
+ 
+ // lib includes
+-#include <boost/process/v1.hpp>
++#include <boost/version.hpp>
++#if BOOST_VERSION < 108800
++  #include <boost/process/v1.hpp>
++#else
++  #ifndef BOOST_PROCESS_V1_HPP
++  #define BOOST_PROCESS_V1_HPP
++
++  #include <boost/process/v1/args.hpp>
++  #include <boost/process/v1/async.hpp>
++  #include <boost/process/v1/async_system.hpp>
++  #include <boost/process/v1/group.hpp>
++  #include <boost/process/v1/child.hpp>
++  #include <boost/process/v1/cmd.hpp>
++  #include <boost/process/v1/env.hpp>
++  #include <boost/process/v1/environment.hpp>
++  #include <boost/process/v1/error.hpp>
++  #include <boost/process/v1/exe.hpp>
++  #include <boost/process/v1/group.hpp>
++  #include <boost/process/v1/handles.hpp>
++  #include <boost/process/v1/io.hpp>
++  #include <boost/process/v1/pipe.hpp>
++  #include <boost/process/v1/shell.hpp>
++  #include <boost/process/v1/search_path.hpp>
++  #include <boost/process/v1/spawn.hpp>
++  #include <boost/process/v1/system.hpp>
++  #include <boost/process/v1/start_dir.hpp>
++
++  #endif //BOOST_PROCESS_V1_HPP
++#endif
+ 
+ // local includes
+ #include "config.h"

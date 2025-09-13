@@ -1,2 +1,6 @@
 # ignore JetBrains IDE files
 .idea/
+
+# ignore build artifacts
+/pkgbuilds/*/*/
+/pkgbuilds/*/*.pkg.*
