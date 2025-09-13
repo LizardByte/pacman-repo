@@ -55,3 +55,8 @@ sudo pacman -S lizardbyte-beta/sunshine-git
 
 - To account for changes to any dependencies, packages in this repo are rebuilt once per day.
 - Packages may have optional run time dependencies, you can review the PKGBUILD files for more information.
+
+## License
+
+This repository is licensed under the [MIT License](LICENSE); however, individual packages may have their own licenses.
+Please refer to the `.SRCINFO` or `PKGBUILD` files for more information.
