@@ -25,6 +25,9 @@ jobs:
     env:
       DISPLAY: ":1"
       CONTAINER_DIR: pkgbuilds
+      _use_cuda: "true"
+      _run_unit_tests: "true"
+      _support_headless_testing: "true"
     strategy:
       fail-fast: false
       matrix:

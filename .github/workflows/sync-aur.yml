@@ -121,9 +121,9 @@ jobs:
           echo "Copying files from pacman-repo..."
           cp -r "../pkgbuilds/${PACKAGE}/." .  # Copy all files including hidden ones (like .SRCINFO)
 
-          # copy .gitignore from workspace root
+          # copy .gitignore-aur from workspace root
           cd "${GITHUB_WORKSPACE}"
-          cp .gitignore "aur-${PACKAGE}/.gitignore"
+          cp .gitignore-aur "aur-${PACKAGE}/.gitignore"
 
           echo "Files copied successfully"
 
