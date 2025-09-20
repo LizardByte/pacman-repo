@@ -66,7 +66,7 @@ source=("$pkgname::git+https://github.com/LizardByte/Sunshine.git#commit=${_comm
 sha256sums=('SKIP')
 
 # Options Handling
-if [[ "${_use_cuda::1}" == "d" ]] && !(lspci | grep VGA | head -1 | grep AMD &> /dev/null); then
+if [[ "${_use_cuda::1}" == "d" ]] && (lspci | grep VGA | head -1 | grep NVIDIA &> /dev/null && pacman -Qi cuda &> /dev/null); then
   _use_cuda=true
 fi
 
