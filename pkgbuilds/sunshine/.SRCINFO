@@ -1,7 +1,7 @@
 pkgbase = sunshine
 	pkgdesc = Self-hosted game stream host for Moonlight
 	pkgver = 2025.628.4510
-	pkgrel = 7
+	pkgrel = 8
 	url = https://app.lizardbyte.dev/Sunshine
 	install = sunshine.install
 	arch = x86_64

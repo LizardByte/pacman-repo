@@ -10,7 +10,7 @@
 
 pkgname='sunshine'
 pkgver=2025.628.4510
-pkgrel=7
+pkgrel=8
 pkgdesc="Self-hosted game stream host for Moonlight"
 arch=('x86_64' 'aarch64')
 url=https://app.lizardbyte.dev/Sunshine
@@ -66,7 +66,7 @@ source=("$pkgname::git+https://github.com/LizardByte/Sunshine.git#commit=${_comm
 sha256sums=('SKIP')
 
 # Options Handling
-if [[ "${_use_cuda::1}" == "d" ]] && pacman -Qi cuda &> /dev/null; then
+if [[ "${_use_cuda::1}" == "d" ]] && (lspci | grep VGA | head -1 | grep NVIDIA &> /dev/null && pacman -Qi cuda &> /dev/null); then
   _use_cuda=true
 fi
 
