@@ -62,7 +62,7 @@ jobs:
           build-pacman-repo patch-makepkg --replace
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Configure Git directory
         # prevent fatal error when building stable matrix
