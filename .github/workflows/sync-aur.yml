@@ -1,8 +1,6 @@
 ---
 name: Sync AUR Packages
 
-permissions:
-  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,6 +16,8 @@ on:
 
 jobs:
   get-matrix:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -35,6 +35,8 @@ jobs:
           echo "Generated matrix: {\"package\": $matrix_json}"
 
   sync:
+    permissions:
+      contents: read
     needs:
       - get-matrix
     runs-on: ubuntu-latest
