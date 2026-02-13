@@ -1,15 +1,12 @@
 ---
 name: Build Pacman Repo
-permissions:
-  contents: read
+permissions: {}
 
 on:
   push:
     branches:
       - master
   pull_request:
-    branches:
-      - master
   schedule:
     - cron: "0 0 * * *"
 
@@ -19,6 +16,8 @@ concurrency:
 
 jobs:
   build-pacman-repo:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     container:
       image: archlinux/archlinux:base-devel
@@ -150,6 +149,9 @@ jobs:
           Xvfb "${DISPLAY}" -screen 0 1024x768x24 &
 
       - name: Build Pacman Repo
+        env:
+          GH_BOT_NAME: ${{ vars.GH_BOT_NAME }}
+          GH_BOT_EMAIL: ${{ secrets.GH_BOT_EMAIL }}
         run: |
           source /etc/profile  # ensure cuda is in the PATH
 
@@ -167,7 +169,7 @@ jobs:
             --with-pacman pacman \
             --with-arch-filter x86_64 \
             --with-check inherit \
-            --with-packager "${{ secrets.GH_BOT_NAME }} <${{ secrets.GH_BOT_EMAIL }}>" \
+            --with-packager "${GH_BOT_NAME} <${GH_BOT_EMAIL}>" \
             --with-allow-failure false \
             --with-dereference-database-symlinks true \
             > build-pacman-repo.yaml
