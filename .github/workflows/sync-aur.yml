@@ -1,5 +1,6 @@
 ---
 name: Sync AUR Packages
+permissions: {}
 
 
 concurrency:
@@ -16,11 +17,11 @@ on:
 
 jobs:
   get-matrix:
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -35,10 +36,10 @@ jobs:
           echo "Generated matrix: {\"package\": $matrix_json}"
 
   sync:
-    permissions:
-      contents: read
     needs:
       - get-matrix
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJson(needs.get-matrix.outputs.matrix) }}
@@ -89,7 +90,7 @@ jobs:
 
       - name: Configure Git
         env:
-          GIT_USER_NAME: ${{ secrets.GH_BOT_NAME }}
+          GIT_USER_NAME: ${{ vars.GH_BOT_NAME }}
           GIT_USER_EMAIL: ${{ secrets.GH_BOT_EMAIL }}
         run: |
           git config --global user.name "${GIT_USER_NAME}"
@@ -156,7 +157,7 @@ jobs:
           git commit -m "Update package from LizardByte/pacman-repo
 
           Automated sync from: https://github.com/LizardByte/pacman-repo/tree/master/pkgbuilds/${PACKAGE}
-          Commit: ${{ github.sha }}"
+          Commit: ${GITHUB_SHA}"
 
           # Push to AUR
           echo "Pushing to AUR..."
