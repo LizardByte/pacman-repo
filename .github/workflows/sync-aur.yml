@@ -41,6 +41,9 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    environment:
+      name: AUR / ${{ matrix.package }}
+      url: https://aur.archlinux.org/packages/${{ matrix.package }}
     strategy:
       matrix: ${{ fromJson(needs.get-matrix.outputs.matrix) }}
       fail-fast: false
