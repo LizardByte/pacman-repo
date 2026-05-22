@@ -27,7 +27,7 @@ SigLevel = Optional
 Server = https://github.com/LizardByte/pacman-repo/releases/download/beta
 ```
 
-Then, run `sudo pacman -Sy` to update repository.
+Then, run `sudo pacman -Syu` to update the system.
 
 ## Packages
 
