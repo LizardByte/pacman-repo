@@ -1,8 +1,21 @@
-# LizardByte's Pacman Repository
+<div align="center">
+  <img
+    src="https://raw.githubusercontent.com/LizardByte/.github/refs/heads/master/branding/logos/logo.svg"
+    alt="LizardByte icon"
+    width="256"
+  />
+  <h1 align="center">pacman-repo</h1>
+  <h4 align="center">ArchLinux packages for LizardByte applications.</h4>
+</div>
 
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/LizardByte/pacman-repo/build-repo.yml?branch=master&event=schedule&style=for-the-badge&logo=github)](https://github.com/LizardByte/pacman-repo/actions/workflows/build-repo.yml?query=event%3Aschedule+branch%3Amaster)
-[![GitHub Downloads (all assets, specific tag)](https://img.shields.io/github/downloads/LizardByte/pacman-repo/beta/total?style=for-the-badge&logo=archlinux&label=daily%20downloads%40beta)](https://github.com/LizardByte/pacman-repo/releases/tag/beta)
-[![GitHub Downloads (all assets, specific tag)](https://img.shields.io/github/downloads/LizardByte/pacman-repo/latest/total?style=for-the-badge&logo=archlinux&label=daily%20downloads%40latest)](https://github.com/LizardByte/pacman-repo/releases/latest)
+<div align="center">
+  <a href="https://github.com/LizardByte/pacman-repo/actions/workflows/build-repo.yml?query=branch%3Amaster"><img src="https://img.shields.io/github/actions/workflow/status/lizardbyte/pacman-repo/build-repo.yml.svg?branch=master&label=build&logo=github&style=for-the-badge" alt="GitHub Workflow Status"></a>
+  <a href="https://github.com/LizardByte/pacman-repo/releases/tag/stable"><img src="https://img.shields.io/github/downloads/LizardByte/pacman-repo/stable/lizardbyte.db.svg?style=for-the-badge&logo=archlinux&label=current%20db%20downloads%40stable&displayAssetName=false" alt="Stable database downloads since publish"></a>
+  <a href="https://github.com/LizardByte/pacman-repo/releases/tag/beta"><img src="https://img.shields.io/github/downloads/LizardByte/pacman-repo/beta/lizardbyte-beta.db.svg?style=for-the-badge&logo=archlinux&label=current%20db%20downloads%40beta&displayAssetName=false" alt="Beta database downloads since publish"></a>
+  <a href="https://sonarcloud.io/project/overview?id=LizardByte_pacman-repo"><img src="https://img.shields.io/sonar/quality_gate/LizardByte_pacman-repo.svg?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarqubecloud&label=sonarcloud" alt="SonarCloud"></a>
+</div>
+
+# LizardByte's Pacman Repository
 
 Repository of Arch Linux packages for LizardByte packages.
 
