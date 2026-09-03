@@ -52,9 +52,9 @@ jobs:
 
       - name: Download Pacman Repo Builder
         run: |
-          wget \
-            "https://github.com/LizardByte/pacman-repo-builder/releases/latest/download/build-pacman-repo" \
-            -O /usr/bin/build-pacman-repo
+          builder_url="https://github.com/LizardByte/pacman-repo-builder/releases/latest/download/build-pacman-repo"
+          # GitHub's latest-release URL requires two redirects to the release asset
+          wget --max-redirect=2 "${builder_url}" -O /usr/bin/build-pacman-repo  # NOSONAR (githubactions:S6506)
           chmod +x /usr/bin/build-pacman-repo
 
           # patch makepkg to allow running as root
