@@ -5,7 +5,7 @@
     width="256"
   />
   <h1 align="center">pacman-repo</h1>
-  <h4 align="center">ArchLinux packages for LizardByte applications.</h4>
+  <h4 align="center">Arch Linux and Manjaro packages for LizardByte applications.</h4>
 </div>
 
 <div align="center">
@@ -17,7 +17,7 @@
 
 # LizardByte's Pacman Repository
 
-Repository of Arch Linux packages for LizardByte packages.
+Repository of Arch Linux and Manjaro packages for LizardByte applications.
 
 > [!CAUTION]
 > LizardByte does not support packages hosted on the AUR. The platform is not secure, since anyone is able to
@@ -26,7 +26,9 @@ Repository of Arch Linux packages for LizardByte packages.
 
 ## Repo Installation
 
-Add the following code snippet to your `/etc/pacman.conf`:
+Choose the repositories for your distribution and add the corresponding snippets to `/etc/pacman.conf`.
+
+### Arch Linux
 
 ```conf
 [lizardbyte]
@@ -40,7 +42,36 @@ SigLevel = Optional
 Server = https://github.com/LizardByte/pacman-repo/releases/download/beta
 ```
 
+### Manjaro Stable
+
+```conf
+[lizardbyte-manjaro]
+SigLevel = Optional
+Server = https://github.com/LizardByte/pacman-repo/releases/download/manjaro
+```
+
+```conf
+[lizardbyte-manjaro-beta]
+SigLevel = Optional
+Server = https://github.com/LizardByte/pacman-repo/releases/download/manjaro-beta
+```
+
+Both Manjaro repositories are built against the **Manjaro Stable** distribution branch. The beta repository provides
+Sunshine beta packages; it does not target Manjaro Testing or Unstable.
+
+### Update and migrate
+
 Then, run `sudo pacman -Syu` to update the system.
+
+If you previously installed the Arch package on Manjaro, replace the Arch repository entries with the Manjaro entries
+above, then explicitly reinstall the matching package. The Arch and Manjaro builds can have the same package version,
+so a normal system update may not replace the installed Arch build:
+
+```bash
+sudo pacman -Syu lizardbyte-manjaro/sunshine
+```
+
+For the beta package, use `sudo pacman -Syu lizardbyte-manjaro-beta/sunshine-git` instead.
 
 ## Packages
 
@@ -49,6 +80,13 @@ Then, run `sudo pacman -Syu` to update the system.
 ```bash
 pacman -Sl lizardbyte
 pacman -Sl lizardbyte-beta
+```
+
+On Manjaro:
+
+```bash
+pacman -Sl lizardbyte-manjaro
+pacman -Sl lizardbyte-manjaro-beta
 ```
 
 ### Install repo packages
@@ -64,9 +102,18 @@ sudo pacman -S lizardbyte/sunshine
 sudo pacman -S lizardbyte-beta/sunshine-git
 ```
 
+On Manjaro:
+
+```bash
+sudo pacman -S lizardbyte-manjaro/sunshine
+sudo pacman -S lizardbyte-manjaro-beta/sunshine-git
+```
+
 ## Considerations
 
 - To account for changes to any dependencies, packages in this repo are rebuilt once per day.
+- Arch Linux and Manjaro packages use the same PKGBUILDs, built separately against each distribution's libraries.
+- Packages are installed and checked for unresolved libraries in a fresh matching container before publishing.
 - Packages may have optional run time dependencies, you can review the PKGBUILD files for more information.
 
 ## License

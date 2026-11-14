@@ -14,33 +14,81 @@ concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build-pacman-repo:
+    name: Build (${{ matrix.distribution }}, ${{ matrix.channel }})
     permissions:
       contents: read
     runs-on: ubuntu-latest
     container:
-      image: archlinux/archlinux:base-devel
+      image: ${{ matrix.image }}
     env:
       DISPLAY: ":1"
       CONTAINER_DIR: pkgbuilds
       _use_cuda: "true"
       _run_unit_tests: "true"
       _support_headless_testing: "true"
-    strategy:
+    strategy: &repository-strategy
       fail-fast: false
       matrix:
         include:
-          - repo: lizardbyte
+          - distribution: arch
+            image: archlinux/archlinux:base-devel
+            runtime_image: archlinux/archlinux:base
+            channel: stable
+            repo: lizardbyte
             release_name: stable
-          - repo: lizardbyte-beta
+          - distribution: arch
+            image: archlinux/archlinux:base-devel
+            runtime_image: archlinux/archlinux:base
+            channel: beta
+            repo: lizardbyte-beta
             release_name: beta
+          - distribution: manjaro
+            image: manjarolinux/base:latest
+            runtime_image: manjarolinux/base:latest
+            channel: stable
+            repo: lizardbyte-manjaro
+            release_name: manjaro
+          - distribution: manjaro
+            image: manjarolinux/base:latest
+            runtime_image: manjarolinux/base:latest
+            channel: beta
+            repo: lizardbyte-manjaro-beta
+            release_name: manjaro-beta
     steps:
+      - &configure-distribution
+        name: Configure Distribution
+        env:
+          DISTRIBUTION: ${{ matrix.distribution }}
+        run: |
+          keyrings=(archlinux-keyring)
+          keyring_names=(archlinux)
+          upgrade=(-Syu)
+
+          pacman-key --init
+          if [[ "${DISTRIBUTION}" == "manjaro" ]]; then
+            keyrings+=(manjaro-keyring)
+            keyring_names+=(manjaro)
+            pacman-key --populate "${keyring_names[@]}"
+            pacman-mirrors --api --set-branch stable
+            pacman-mirrors --fasttrack 5
+            # Downgrade any packages in the base image that are ahead of Stable.
+            upgrade=(-Syuu)
+          fi
+
+          pacman -Syy --disable-download-timeout --needed --noconfirm "${keyrings[@]}"
+          pacman-key --populate "${keyring_names[@]}"
+          pacman "${upgrade[@]}" --disable-download-timeout --needed --noconfirm
+          pacman -Q glibc openssl
+
       - name: Container Setup
         run: |
-          pacman -Syy --disable-download-timeout --needed --noconfirm \
-            archlinux-keyring
-          pacman -Syu --disable-download-timeout --needed --noconfirm \
+          pacman -S --disable-download-timeout --needed --noconfirm \
             base-devel \
             cmake \
             cuda \
@@ -50,12 +98,31 @@ jobs:
             xorg-server-xvfb
           pacman -Scc --noconfirm
 
-      - name: Download Pacman Repo Builder
+      - name: Set Up Pacman Repo Builder
+        env:
+          DISTRIBUTION: ${{ matrix.distribution }}
         run: |
-          builder_url="https://github.com/LizardByte/pacman-repo-builder/releases/latest/download/build-pacman-repo"
-          # GitHub's latest-release URL requires two redirects to the release asset
-          wget --max-redirect=2 "${builder_url}" -O /usr/bin/build-pacman-repo  # NOSONAR (githubactions:S6506)
-          chmod +x /usr/bin/build-pacman-repo
+          if [[ "${DISTRIBUTION}" == "manjaro" ]]; then
+            # The published builder links to Arch's glibc/libalpm. Build it against Manjaro's libraries.
+            pacman -S --disable-download-timeout --needed --noconfirm rustup
+            builder_tag=$(
+              curl --fail --silent --show-error \
+                https://api.github.com/repos/LizardByte/pacman-repo-builder/releases/latest | jq -er '.tag_name'
+            )
+            builder_dir="${RUNNER_TEMP}/pacman-repo-builder"
+            git clone --depth 1 --branch "${builder_tag}" \
+              https://github.com/LizardByte/pacman-repo-builder.git "${builder_dir}"
+            pushd "${builder_dir}"
+            # rustup uses the toolchain pinned in the builder's rust-toolchain.toml.
+            cargo build --locked --release
+            install -Dm755 target/release/build-pacman-repo /usr/bin/build-pacman-repo
+            popd
+          else
+            builder_url="https://github.com/LizardByte/pacman-repo-builder/releases/latest/download/build-pacman-repo"
+            # GitHub's latest-release URL requires two redirects to the release asset
+            wget --max-redirect=2 "${builder_url}" -O /usr/bin/build-pacman-repo  # NOSONAR (githubactions:S6506)
+            chmod +x /usr/bin/build-pacman-repo
+          fi
 
           # patch makepkg to allow running as root
           build-pacman-repo patch-makepkg --replace
@@ -64,12 +131,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Configure Git directory
-        # prevent fatal error when building stable matrix
-        if: matrix.release_name == 'stable'
-        run: git config --global --add safe.directory /__w/pacman-repo/pacman-repo
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
       - name: Download and Patch beta PKGBUILDs
-        if: matrix.release_name == 'beta'
+        if: matrix.channel == 'beta'
         run: |
           # we don't want any stable packages to be built, so remove them
           rm -rf "${CONTAINER_DIR}"
@@ -189,6 +254,64 @@ jobs:
             exit 1
           fi
 
+      - name: Upload Pacman Repo
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: repo-${{ matrix.release_name }}
+          path: repo/*
+          if-no-files-found: error
+          retention-days: 7
+
+  verify-and-release-pacman-repo:
+    name: Verify and Release (${{ matrix.distribution }}, ${{ matrix.channel }})
+    needs: build-pacman-repo
+    # Verify successful artifacts even when another distribution/channel failed to build.
+    if: ${{ !cancelled() }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.runtime_image }}
+    strategy: *repository-strategy
+    steps:
+      # Use a fresh container so build dependencies cannot hide missing runtime dependencies.
+      - *configure-distribution
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Download Pacman Repo
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: repo-${{ matrix.release_name }}
+          path: repo
+
+      - name: Install and Check Packages
+        env:
+          REPO_NAME: ${{ matrix.repo }}
+        run: |
+          test -s "repo/${REPO_NAME}.db"
+          shopt -s nullglob
+          packages=(repo/*.pkg.tar.zst repo/*.pkg.tar.xz repo/*.pkg.tar.gz)
+          if [[ ${#packages[@]} -eq 0 ]]; then
+            echo "::error:: No packages found in repo"
+            exit 1
+          fi
+
+          # Scriptlets configure host udev and capabilities, which do not apply in this container.
+          pacman -U --disable-download-timeout --noconfirm --noscriptlet "${packages[@]}"
+
+          if ! linkage=$(ldd /usr/bin/sunshine 2>&1); then
+            printf '%s\n' "${linkage}"
+            exit 1
+          fi
+          printf '%s\n' "${linkage}"
+          if grep -q 'not found' <<< "${linkage}"; then
+            echo "::error:: Sunshine has unresolved runtime library dependencies"
+            exit 1
+          fi
+          /usr/bin/sunshine --version
+
       - name: Create/Update GitHub Release
         if: github.event_name == 'schedule' || github.event_name == 'push'
         uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd  # v1.21.0
@@ -200,6 +323,6 @@ jobs:
           commit: master
           makeLatest: ${{ matrix.release_name == 'stable' || false }}
           name: ${{ matrix.release_name }}
-          prerelease: ${{ matrix.release_name == 'beta' || false }}
+          prerelease: ${{ matrix.channel == 'beta' || false }}
           tag: ${{ matrix.release_name }}
           token: ${{ secrets.GH_BOT_TOKEN }}
